@@ -1,43 +1,58 @@
+import { MongoClient, ObjectId } from "mongodb";
 import MeetupDetail from "../../components/meetups/MeetupDetails";
 
-function MeetupDetails() {
+function MeetupDetails(props) {
 
   return (
     <MeetupDetail
-      image="https://upload.wikimedia.org/wikipedia/commons/d/d3/Stadtbild_M%C3%BCnchen.jpg"
-      title="First Meetup"
-      address="Some Street 5, Some City"
-      description="This is first meet up "
+      image={props.meetupData.image}
+      title={props.meetupData.title}
+      address={props.meetupData.address}
+      description={props.meetupData.description}
     />
   );
 }
 
 export async function getStaticPaths(){
+    const userName = 'varunk2801'
+    const password = 'Wertz@56625'
+    const client = await MongoClient.connect(`mongodb+srv://${userName}:${encodeURIComponent(password)}@cluster0.pkamdrt.mongodb.net/meetups?retryWrites=true&w=majority`);
+    const db = client.db();
+
+    const meetupsCollection = db.collection('meetups');
+    const meetups = await meetupsCollection.find({},{_id: 1}).toArray();
+    client.close();
+
     return{
         fallback:false,
-        paths: [
-            {params: {
-                meetupId: "m1"
-            }},
-            {params: {
-                meetupId: "m2"
-            }}
-        ]
+        paths: meetups.map((meetup) =>({ 
+            params: { meetupId: meetup._id.toString()} ,
+        })),
+        
     }
 }
 export async function getStaticProps(context){
-    const  meetupId = context.params.meetupId;
-    console.log(meetupId);
 
+    const  meetupId = context.params.meetupId;
+
+    const userName = 'varunk2801'
+    const password = 'Wertz@56625'
+    const client = await MongoClient.connect(`mongodb+srv://${userName}:${encodeURIComponent(password)}@cluster0.pkamdrt.mongodb.net/meetups?retryWrites=true&w=majority`);
+    const db = client.db();
+
+    const meetupsCollection = db.collection('meetups');
+    const selectedMeetup = await meetupsCollection.findOne({ _id: new ObjectId(meetupId)});
+
+    client.close();
     return{
         props:{
             meetupData : {
-                image:"https://upload.wikimedia.org/wikipedia/commons/d/d3/Stadtbild_M%C3%BCnchen.jpg",
-                id: meetupId,
-                title: "First Meetup",
-                address:"Some Street 5, Some City",
-                description: "This is first meet up "
-            }
+                id: selectedMeetup._id.toString(),
+                title: selectedMeetup.title,
+                image: selectedMeetup.image,
+                address: selectedMeetup.address,
+                description: selectedMeetup.description
+            },
         }
     }
 }
